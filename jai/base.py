@@ -222,7 +222,11 @@ class BaseJai(object):
         return requests.put(url, headers=header, data=data_json)
 
     @raise_status_error(200)
-    def _predict(self, name: str, data_json, predict_proba: bool = False):
+    def _predict(self,
+                 name: str,
+                 data_json,
+                 predict_proba: bool = False,
+                 annotations=None):
         """
         Predict the output of new data for a given database by calling its
         respecive API method. This is a protected method.
@@ -246,7 +250,11 @@ class BaseJai(object):
 
         header = copy(self.header)
         header['Content-Type'] = "application/json"
-        return requests.put(url, headers=header, data=data_json)
+        data = {'data': json.loads(data_json)}
+        if annotations is not None:
+            data = {**data, **annotations}
+        data = json.dumps(data)
+        return requests.put(url, headers=header, data=data)
 
     @raise_status_error(200)
     def _ids(self, name: str, mode: Mode = "simple"):
@@ -310,7 +318,11 @@ class BaseJai(object):
         return requests.patch(self.url + f"/data/{name}", headers=self.header)
 
     @raise_status_error(200)
-    def _insert_json(self, name: str, data_json, filter_name: str = None):
+    def _insert_json(self,
+                     name: str,
+                     data_json,
+                     filter_name: str = None,
+                     annotations=None):
         """
         Insert data in JSON format. This is a protected method.
 
@@ -331,7 +343,11 @@ class BaseJai(object):
 
         header = copy(self.header)
         header['Content-Type'] = "application/json"
-        return requests.post(url, headers=header, data=data_json)
+        data = {'table': json.loads(data_json)}
+        if annotations is not None:
+            data = {**data, **annotations}
+        data = json.dumps(data)
+        return requests.post(url, headers=header, data=data)
 
     @raise_status_error(201)
     def _setup(self, name: str, body, overwrite=False):

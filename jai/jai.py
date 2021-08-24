@@ -380,12 +380,29 @@ class Jai(BaseJai):
                 f"data must be a pandas Series or DataFrame. (data type `{data.__class__.__name__}`)"
             )
 
+        # insert data
+        from datetime import datetime
+        annotations = {
+            "prefix": "predict_",
+            "suffix": "_" + datetime.now().strftime("%d%m%y%H%M%S%f")
+        }
+        db_type = PossibleDtypes.supervised
+        self._insert_data(data=data,
+                          name=name,
+                          batch_size=batch_size,
+                          db_type=db_type,
+                          annotations=annotations)
+
+        # check if we inserted everything we were supposed to
+        self._check_ids_consistency(name=name, data=data)
+
         results = []
         for i in trange(0, len(data), batch_size, desc="Predict"):
             _batch = data.iloc[i:i + batch_size]
             res = self._predict(name,
                                 data2json(_batch, dtype=dtype, predict=True),
-                                predict_proba=predict_proba)
+                                predict_proba=predict_proba,
+                                annotations=annotations)
             results.extend(res)
 
         return process_predict(results) if as_frame else results
@@ -625,7 +642,8 @@ class Jai(BaseJai):
                      db_type,
                      batch_size,
                      filter_name: str = None,
-                     predict: bool = False):
+                     predict: bool = False,
+                     annotations=None):
         """
         Insert raw data for training. This is a protected method.
 
@@ -656,7 +674,7 @@ class Jai(BaseJai):
                                   filter_name=filter_name,
                                   predict=predict)
             insert_responses[i] = self._insert_json(name, data_json,
-                                                    filter_name)
+                                                    filter_name, annotations)
         return insert_responses
 
     def _check_kwargs(self, db_type, **kwargs):
